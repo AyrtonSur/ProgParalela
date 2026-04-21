@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
     if (primo(i) == 1) cont++;
 
   MPI_Pack_size(1, MPI_INT, MPI_COMM_WORLD, &tamanho);
-  int tam_buffer = tamanho + 2 * MPI_BSEND_OVERHEAD;
+  int tam_buffer = tamanho + MPI_BSEND_OVERHEAD;
   buffer = (void*) malloc(tam_buffer);
   MPI_Buffer_attach(buffer, tam_buffer);
 
@@ -64,14 +64,14 @@ int main(int argc, char* argv[]) {
     total = cont;
   }
 
-
-
   t_final = MPI_Wtime();
   if (meu_ranque == 0) {
     total += 1; /* Acrescenta o dois, que também é primo */
     printf("Quant. de primos entre 1 e n: %d \n", total);
     printf("Tempo de execucao: %1.3f \n", t_final - t_inicial);
   }
+  MPI_Buffer_detach(buffer, tam_buffer);
+  free(buffer);
   MPI_Finalize();
   return (0);
 }
