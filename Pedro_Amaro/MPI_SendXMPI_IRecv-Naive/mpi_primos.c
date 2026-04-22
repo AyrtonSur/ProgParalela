@@ -1,20 +1,3 @@
-/*
- * ============================================================================
- * DOCUMENTAÇÃO DE DESEMPENHO E AVALIAÇÃO
- * ============================================================================
- * Estratégia de Ganho de Performance:
- * A função MPI_Reduce foi substituída por uma combinação de MPI_Irecv e MPI_Send.
- * O ganho de performance é obtido através do "Overlap" (sobreposição) de 
- * comunicação e computação. O processo mestre (ranque 0) posta antecipadamente 
- * todas as requisições de recebimento (MPI_Irecv) ANTES de iniciar a sua 
- * própria carga de trabalho matemática (o laço for). 
- * * Isso permite que a biblioteca MPI gerencie o recebimento das mensagens dos 
- * processos trabalhadores em background enquanto a CPU do mestre foca na 
- * verificação dos primos. Reduz-se drasticamente o gargalo de sincronização no
- * final da execução.
- * ============================================================================
- */
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

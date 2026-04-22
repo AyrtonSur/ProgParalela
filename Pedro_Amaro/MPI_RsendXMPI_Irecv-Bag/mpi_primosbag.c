@@ -1,25 +1,3 @@
-/*
- * ============================================================================
- * DOCUMENTAÇÃO DE GANHO DE PERFORMANCE E OTIMIZAÇÃO:
- * ============================================================================
- * O ganho de performance obtido pela substituição dos envios bloqueantes vem
- * de duas fontes estruturais nesta refatoração:
- * * 1. Eliminação do Overhead de Handshake: O comando `MPI_Rsend` (Ready Send) 
- * desabilita os protocolos de negociação de envio de rede (ex: Rendezvous),
- * pois ele parte da premissa absoluta que o destino já está aguardando os 
- * dados. Isso reduz a latência de comunicação a cada pedaço do bag of tasks.
- * * 2. Sobreposição de Computação e Comunicação (Pipeline): Ao utilizarmos o 
- * `MPI_Irecv` (Non-blocking receive), nós "pré-postamos" a intenção de 
- * receber a próxima tarefa. 
- * - O mestre pré-posta a recepção dos resultados antes de enviar tarefas.
- * - O escravo pré-posta a recepção da próxima tarefa antes de enviar o
- * resultado atual para o mestre.
- * Isso garante que enquanto a CPU está presa na função primo() executando
- * os cálculos matemáticos, o hardware de rede e o protocolo MPI já 
- * estão realizando DMA do próximo pacote em background, mitigando o idle.
- * ============================================================================
- */
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

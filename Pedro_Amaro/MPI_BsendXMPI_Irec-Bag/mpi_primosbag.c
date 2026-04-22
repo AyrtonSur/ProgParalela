@@ -1,28 +1,4 @@
-/*
- * ============================================================================
- * DOCUMENTAÇÃO DE GANHO DE PERFORMANCE (SPEEDUP)
- * ============================================================================
- * Mudanças realizadas:
- * 1. Substituição de MPI_Send por MPI_Bsend (Envio em buffer).
- * 2. Substituição de MPI_Recv por MPI_Irecv + MPI_Wait (Recebimento não-bloqueante).
- * * Como o ganho de performance é gerado?
- * O ganho principal (Latency Hiding / Ocultação de Latência) ocorre devido ao 
- * desacoplamento da sincronização entre remetente e destinatário.
- * * - Com MPI_Send (padrão): Dependendo da implementação do MPI e do tamanho da 
- * mensagem, o mestre pode ficar bloqueado esperando o trabalhador (worker) 
- * estar pronto para receber a tarefa, e o trabalhador bloqueia esperando o 
- * mestre receber a contagem. Isso desperdiça ciclos de CPU.
- * * - Com MPI_Bsend: O mestre (rank 0) empacota as tarefas (chunks) no buffer 
- * local e retorna IMEDIATAMENTE para sua rotina, disparando as tarefas para
- * os trabalhadores muito mais rápido. Da mesma forma, o trabalhador calcula
- * o resultado, joga no buffer com Bsend e já pede a próxima tarefa, sem ficar
- * ocioso aguardando o mestre ler o resultado anterior.
- * * - Com MPI_Irecv: Prepara o hardware/camada de rede para receber a mensagem 
- * antes do bloqueio estrito. Embora o MPI_Wait bloqueie até a mensagem 
- * chegar, postar a requisição assíncrona ajuda a biblioteca MPI a gerenciar
- * o recebimento em background.
- * ============================================================================
- */
+
 
 #include <math.h>
 #include <stdio.h>

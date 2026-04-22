@@ -1,21 +1,3 @@
-/*
- * OTIMIZAÇÃO — SOBREPOSIÇÃO DE COMUNICAÇÃO COM PROCESSAMENTO:
- *
- * O rank 0 registra todos os recebimentos não-bloqueantes (MPI_Irecv)
- * antes de iniciar seu próprio loop de contagem de primos. Isso significa
- * que os buffers de destino já estão prontos no sistema MPI desde o início,
- * permitindo que qualquer worker que termine mais cedo deposite seu resultado
- * imediatamente, sem precisar aguardar o rank 0 estar disponível.
- *
- * Já os workers, ao encerrarem sua contagem, disparam o envio com MPI_Isend
- * (não-bloqueante) e chamam MPI_Wait logo em seguida apenas para garantir
- * a segurança do buffer — sem ficarem bloqueados esperando confirmação
- * do receptor.
- *
- * O resultado é que a comunicação acontece em paralelo com o processamento
- * do rank 0, eliminando o tempo ocioso que existia com o MPI_Reduce bloqueante.
- */
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

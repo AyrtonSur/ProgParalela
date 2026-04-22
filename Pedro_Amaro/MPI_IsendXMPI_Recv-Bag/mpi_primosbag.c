@@ -1,29 +1,3 @@
-/*
-=======================================================================================
-DOCUMENTAÇÃO DE OTIMIZAÇÃO E REATORAÇÃO (BAG OF TASKS)
-=======================================================================================
-
-Estratégia de Ganho de Performance:
-A substituição do `MPI_Send` (bloqueante) por `MPI_Isend` (não-bloqueante) aliada ao
-`MPI_Recv` reduz o overhead de sincronização de rede ("handshake"), permitindo o 
-sobreposicionamento (overlap) de comunicação. 
-
-1. No Mestre (Processo 0): 
-Ao invés de esperar que a rede confirme o envio do pacote de trabalho para um nó 
-escravo (o que poderia causar atrasos caso o buffer do destinatário estivesse cheio), 
-o mestre utiliza o `MPI_Isend` para apenas despachar o trabalho e retornar 
-imediatamente para o `MPI_Recv` à espera de resultados de QUALQUER outro processo 
-(`MPI_ANY_SOURCE`). Isso maximiza a responsividade do mestre na distribuição de tarefas.
-Para evitar condição de corrida (onde a variável sobrescreve o valor antes de ser enviada),
-foi alocado um vetor de buffers de envio `inicio_buf[num_procs]`.
-
-2. Nos Escravos:
-Ao calcular os números primos do seu chunk, o escravo envia o resultado via `MPI_Isend`. 
-Ele só aguarda a conclusão (via `MPI_Wait`) no ciclo seguinte, garantindo que o tempo de
-cálculo do próximo bloco mascare o tempo de transferência da resposta anterior.
-=======================================================================================
-*/
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

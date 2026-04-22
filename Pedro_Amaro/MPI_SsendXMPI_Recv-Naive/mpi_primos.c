@@ -1,13 +1,3 @@
-/*
- * Documentação dos ganhos de performance:
- * 2. Comunicação com MPI_Ssend e MPI_Recv:
- * O comando MPI_Reduce foi substituído pelas chamadas de envio síncrono (MPI_Ssend)
- * e recebimento (MPI_Recv). Para minimizar o tempo em que as tarefas ficam
- * bloqueadas esperando o processo 0 receber a mensagem (já que MPI_Ssend é síncrono),
- * foi utilizado MPI_ANY_SOURCE no MPI_Recv. Dessa forma, o processo 0 recebe
- * os dados na ordem em que as tarefas terminam, melhorando a eficiência da etapa 
- * de comunicação no caso de desbalanceamento de carga.
- */
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
