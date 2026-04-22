@@ -20,7 +20,6 @@ int main(int argc, char* argv[]) {
   int meu_ranque, num_procs, inicio, dest, raiz = 0, tag = 1, stop = 0;
   MPI_Status estado;
 
-  /* Verifica o número de argumentos passados */
   if (argc < 2) {
     printf("Entre com o valor do maior inteiro como parâmetro para o programa.\n");
     return 0;
@@ -32,18 +31,15 @@ int main(int argc, char* argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &meu_ranque);
   MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
-  /* Se houver menos que dois processos aborta */
   if (num_procs < 2) {
     printf("Este programa deve ser executado com no mínimo dois processos.\n");
     MPI_Abort(MPI_COMM_WORLD, 1);
     return (1);
   }
 
-  /* Registra o tempo inicial de execução do programa */
   t_inicial = MPI_Wtime();
 
   if (meu_ranque == 0) {
-    /* Arrays para Requests e Buffers individuais por processo para os envios não-bloqueantes */
     MPI_Request *reqs = (MPI_Request*) malloc(num_procs * sizeof(MPI_Request));
     int *inicio_buf = (int*) malloc(num_procs * sizeof(int));
     
@@ -51,19 +47,16 @@ int main(int argc, char* argv[]) {
         reqs[j] = MPI_REQUEST_NULL;
     }
 
-    /* Envia pedaços com TAMANHO números para cada processo */
     for (dest = 1, inicio = 3; dest < num_procs && inicio < n; dest++, inicio += TAMANHO) {
       inicio_buf[dest] = inicio;
       MPI_Isend(&inicio_buf[dest], 1, MPI_INT, dest, tag, MPI_COMM_WORLD, &reqs[dest]);
     }
 
-    /* Fica recebendo as contagens parciais de cada processo */
     while (stop < (num_procs - 1)) {
       MPI_Recv(&cont, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &estado);
       total += cont;
       dest = estado.MPI_SOURCE;
       
-      /* Aguarda conclusão do último Isend para este destino específico antes de reutilizar o buffer */
       if (reqs[dest] != MPI_REQUEST_NULL) {
           MPI_Wait(&reqs[dest], MPI_STATUS_IGNORE);
       }
@@ -73,21 +66,18 @@ int main(int argc, char* argv[]) {
         stop++;
       }
       
-      /* Envia um novo pedaço com TAMANHO números para o mesmo processo */
       inicio_buf[dest] = inicio;
       MPI_Isend(&inicio_buf[dest], 1, MPI_INT, dest, tag, MPI_COMM_WORLD, &reqs[dest]);
       inicio += TAMANHO;
     }
     
-    /* Cleanup mestre */
     free(reqs);
     free(inicio_buf);
 
   } else {
     MPI_Request req_envio = MPI_REQUEST_NULL;
-    int meu_cont = 0; /* Buffer estável para o envio assíncrono */
+    int meu_cont = 0;
 
-    /* Cada processo escravo recebe o início do espaço de busca */
     while (1) {
       MPI_Recv(&inicio, 1, MPI_INT, raiz, MPI_ANY_TAG, MPI_COMM_WORLD, &estado);
       
@@ -99,33 +89,28 @@ int main(int argc, char* argv[]) {
         if (primo(i) == 1) cont++;
       }
 
-      /* Garante que o envio não-bloqueante da iteração anterior terminou antes de atualizar o buffer */
       if (req_envio != MPI_REQUEST_NULL) {
         MPI_Wait(&req_envio, MPI_STATUS_IGNORE);
       }
       
       meu_cont = cont; 
-      /* Envia a contagem parcial para o processo mestre via Isend */
       MPI_Isend(&meu_cont, 1, MPI_INT, raiz, tag, MPI_COMM_WORLD, &req_envio);
     }
     
-    /* Garante finalização de qualquer mensagem pendente antes de sair */
     if (req_envio != MPI_REQUEST_NULL) {
         MPI_Wait(&req_envio, MPI_STATUS_IGNORE);
     }
 
-    /* Registra o tempo final de execução nos escravos se necessário */
     t_final = MPI_Wtime();
   }
 
   if (meu_ranque == 0) {
     t_final = MPI_Wtime();
-    total += 1; /* Acrescenta o 2, que é primo */
+    total += 1;
     printf("Quant. de primos entre 1 e %d: %d \n", n, total);
     printf("Tempo de execucao: %1.3f \n", t_final - t_inicial);
   }
 
-  /* Finaliza o programa */
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
   return (0);
