@@ -45,6 +45,7 @@ int main(int argc, char* argv[]) {
       }
     } else {
       MPI_Isend(&cont, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &pedido_envia);
+      MPI_Wait(&pedido_envia, MPI_STATUS_IGNORE);
     }
   } else {
     total = cont;
