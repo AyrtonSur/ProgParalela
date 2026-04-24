@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) { /* mpi_primosbag.c  */
     printf("Tempo de execucao: %1.3f \n", t_final - t_inicial);
   }
   /* Finaliza o programa */
-  MPI_Buffer_detach(buffer, &tam_buffer);
+  MPI_Buffer_detach(&buffer, &tam_buffer);
   free(buffer);
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
