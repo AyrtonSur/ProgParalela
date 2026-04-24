@@ -40,9 +40,15 @@ int main(int argc, char* argv[]) { /* mpi_primosbag.c  */
   t_inicial = MPI_Wtime();
   /* Envia pedaços com TAMANHO números para cada processo */
   if (meu_ranque == 0) {
-    for (dest = 1, inicio = 3; dest < num_procs && inicio < n;
+    for (dest = 1, inicio = 3; dest < num_procs;
          dest++, inicio += TAMANHO) {
-      MPI_Send(&inicio, 1, MPI_INT, dest, tag, MPI_COMM_WORLD);
+      if (inicio < n) {
+        MPI_Send(&inicio, 1, MPI_INT, dest, tag, MPI_COMM_WORLD);
+      } else {
+        tag = 99;
+        stop++;
+        MPI_Send(&inicio, 1, MPI_INT, dest, tag, MPI_COMM_WORLD);
+      }
     }
     /* Fica recebendo as contagens parciais de cada processo */
     while (stop < (num_procs - 1)) {
