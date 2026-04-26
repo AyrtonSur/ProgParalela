@@ -13,7 +13,7 @@ int primo(int n) {
   return 1;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) { 
   double t_inicial, t_final;
   int cont = 0, total = 0;
   int i, n;
@@ -37,19 +37,24 @@ int main(int argc, char* argv[]) {
     return (1);
   }
 
+  int *inicio_send = (int *)malloc(num_procs * sizeof(int));
+  MPI_Request *reqs = (MPI_Request *)malloc(num_procs * sizeof(MPI_Request));
+  for (i = 0; i < num_procs; i++) {
+    reqs[i] = MPI_REQUEST_NULL;
+  }
+
   t_inicial = MPI_Wtime();
 
   if (meu_ranque == 0) {
-    MPI_Request *reqs = (MPI_Request*) malloc(num_procs * sizeof(MPI_Request));
-    int *inicio_buf = (int*) malloc(num_procs * sizeof(int));
-    
-    for (int j = 0; j < num_procs; j++) {
-        reqs[j] = MPI_REQUEST_NULL;
-    }
-
-    for (dest = 1, inicio = 3; dest < num_procs && inicio < n; dest++, inicio += TAMANHO) {
-      inicio_buf[dest] = inicio;
-      MPI_Isend(&inicio_buf[dest], 1, MPI_INT, dest, tag, MPI_COMM_WORLD, &reqs[dest]);
+    for (dest = 1, inicio = 3; dest < num_procs; dest++, inicio += TAMANHO) {
+      inicio_send[dest] = inicio;
+      if (inicio < n) {
+        MPI_Isend(&inicio_send[dest], 1, MPI_INT, dest, tag, MPI_COMM_WORLD, &reqs[dest]);
+      } else {
+        tag = 99;
+        stop++;
+        MPI_Isend(&inicio_send[dest], 1, MPI_INT, dest, tag, MPI_COMM_WORLD, &reqs[dest]);
+      }
     }
 
     while (stop < (num_procs - 1)) {
@@ -57,60 +62,58 @@ int main(int argc, char* argv[]) {
       total += cont;
       dest = estado.MPI_SOURCE;
       
-      if (reqs[dest] != MPI_REQUEST_NULL) {
-          MPI_Wait(&reqs[dest], MPI_STATUS_IGNORE);
-      }
+      MPI_Wait(&reqs[dest], MPI_STATUS_IGNORE);
 
-      if (inicio > n) {
+      inicio_send[dest] = inicio;
+      if (inicio >= n) {
         tag = 99;
         stop++;
       }
       
-      inicio_buf[dest] = inicio;
-      MPI_Isend(&inicio_buf[dest], 1, MPI_INT, dest, tag, MPI_COMM_WORLD, &reqs[dest]);
+      MPI_Isend(&inicio_send[dest], 1, MPI_INT, dest, tag, MPI_COMM_WORLD, &reqs[dest]);
       inicio += TAMANHO;
     }
-    
-    free(reqs);
-    free(inicio_buf);
-
   } else {
-    MPI_Request req_envio = MPI_REQUEST_NULL;
-    int meu_cont = 0;
-
+    int cont_send;
+    MPI_Request req_worker = MPI_REQUEST_NULL;
+    
     while (1) {
       MPI_Recv(&inicio, 1, MPI_INT, raiz, MPI_ANY_TAG, MPI_COMM_WORLD, &estado);
       
       if (estado.MPI_TAG == 99) {
         break;
       }
-
+      
       for (i = inicio, cont = 0; i < (inicio + TAMANHO) && i < n; i += 2) {
         if (primo(i) == 1) cont++;
       }
 
-      if (req_envio != MPI_REQUEST_NULL) {
-        MPI_Wait(&req_envio, MPI_STATUS_IGNORE);
+      if (req_worker != MPI_REQUEST_NULL) {
+        MPI_Wait(&req_worker, MPI_STATUS_IGNORE);
       }
       
-      meu_cont = cont; 
-      MPI_Isend(&meu_cont, 1, MPI_INT, raiz, tag, MPI_COMM_WORLD, &req_envio);
+      cont_send = cont;
+      MPI_Isend(&cont_send, 1, MPI_INT, raiz, tag, MPI_COMM_WORLD, &req_worker);
     }
     
-    if (req_envio != MPI_REQUEST_NULL) {
-        MPI_Wait(&req_envio, MPI_STATUS_IGNORE);
+    if (req_worker != MPI_REQUEST_NULL) {
+        MPI_Wait(&req_worker, MPI_STATUS_IGNORE);
     }
-
+    
     t_final = MPI_Wtime();
   }
 
   if (meu_ranque == 0) {
     t_final = MPI_Wtime();
-    total += 1;
+    total += 1; /* Acrescenta o 2, que é primo */
     printf("Quant. de primos entre 1 e %d: %d \n", n, total);
     printf("Tempo de execucao: %1.3f \n", t_final - t_inicial);
   }
 
+  free(inicio_send);
+  free(reqs);
+
+  /* Finaliza o programa */
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
   return (0);
