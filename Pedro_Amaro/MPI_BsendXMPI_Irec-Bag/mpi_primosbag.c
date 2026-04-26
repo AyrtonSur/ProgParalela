@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
 
   int pack_size;
   MPI_Pack_size(1, MPI_INT, MPI_COMM_WORLD, &pack_size);
-  buffer_size = num_procs * (pack_size + MPI_BSEND_OVERHEAD) * 10;
+  buffer_size = num_procs * (pack_size + MPI_BSEND_OVERHEAD);
   buffer_attach = malloc(buffer_size);
   MPI_Buffer_attach(buffer_attach, buffer_size);
 
